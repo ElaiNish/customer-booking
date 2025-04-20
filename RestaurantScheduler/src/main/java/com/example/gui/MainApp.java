@@ -10,7 +10,7 @@ public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource(" c MainView.fxml"));
+                getClass().getResource("MainView.fxml"));
         Scene scene = new Scene(loader.load());
         stage.setTitle("Restaurant Scheduler");
         stage.setScene(scene);

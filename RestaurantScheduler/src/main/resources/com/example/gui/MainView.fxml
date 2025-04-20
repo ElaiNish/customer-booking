@@ -9,7 +9,10 @@
 
     <!-- Top -->
     <top>
-        <HBox spacing="10" alignment="CENTER_LEFT" padding="10">
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <padding>
+                <Insets topRightBottomLeft="50" />
+            </padding>
             <Label fx:id="clockLabel" text="Time: --"/>
             <Button text="Tick" onAction="#onTick"/>
             <Button text="Play/Pause" onAction="#onPlayPause"/>

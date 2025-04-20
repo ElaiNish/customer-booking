@@ -13,11 +13,17 @@ public class AdjacencyMatrix<T> {
         array = (T[]) new Object[size];
     }
 
+
     public AdjacencyMatrix(List<T> list) {
         int size = list.size();
-        array = (T[]) list.toArray();
+        // build a real array of type T[]
+        @SuppressWarnings("unchecked")
+        T[] tmp = (T[]) java.lang.reflect.Array.newInstance(
+                list.get(0).getClass(), size);
+        array = list.toArray(tmp);
         matrix = new byte[size][size];
     }
+
 
     public T[] getArray() {
         return array.clone();
