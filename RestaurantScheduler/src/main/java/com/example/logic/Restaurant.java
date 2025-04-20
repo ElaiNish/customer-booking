@@ -52,6 +52,15 @@ public class Restaurant {
         return tables.getArray();
     }
 
+    public boolean addGroup(Group group) {
+        int index = 2 * group.getPeople() + (group.isHasBaby() ? 1 : 0);
+        if (index >= queues.length || group.getPeople() == 0) return false;
+
+        queues[index].add(group);          // enqueue
+        queuesHeap.heapifyUp(queues[index]);
+        return true;
+    }
+
     private void makeTableCombos(Table table, List<Table> currentList, List<Table> clusterList, int minSeats) {
         if (currentList.contains(table)) return;
         currentList.add(table);

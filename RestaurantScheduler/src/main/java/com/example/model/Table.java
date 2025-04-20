@@ -7,6 +7,7 @@ import java.util.List;
 
 public class Table {
     private static int idCounter = 0;
+
     private int tableID;
     private boolean isInside;
     private boolean hasBabySeat;
@@ -21,6 +22,39 @@ public class Table {
         this.availabilityTime = 0;
         this.tableID = idCounter++;
         this.reservations = new ArrayList<>();
+    }
+
+    public boolean isOccupied() {
+        return this.availabilityTime > Clock.getTime();
+    }
+
+    public boolean occupy() {
+        if (isOccupied()) return false;
+        this.availabilityTime = Clock.getTime() + Restaurant.RESERVATION_DURATION_SECONDS;
+        return true;
+    }
+
+    public boolean isReserved(long time) {
+        if (reservations.isEmpty()) return false;
+        long endTime;
+        for (Reservation reservation : reservations) {
+            endTime = reservation.getStartTime() + Restaurant.RESERVATION_DURATION_SECONDS;
+            if (!(endTime <= reservation.getStartTime() || reservation.getEndTime() <= time))
+                return true;
+        }
+        return false;
+    }
+
+    public void unReserve(Reservation reservation) {
+        reservations.remove(reservation);
+    }
+
+    public void reserve(Reservation reservation) {
+        reservations.add(reservation);
+    }
+
+    public boolean isCluster() {
+        return false;
     }
 
     public int getTableID() {
@@ -51,39 +85,6 @@ public class Table {
         return reservations;
     }
 
-    public boolean isOccupied() {
-        return availabilityTime > Clock.getTime();
-    }
-
-    public boolean occupy() {
-        if (isOccupied()) return false;
-        availabilityTime = Clock.getTime() + Restaurant.RESERVATION_DURATION_SECONDS;
-        return true;
-    }
-
-    public boolean isReserved(long time) {
-        if (reservations.isEmpty()) return false;
-        long endTime;
-        for (Reservation reservation : reservations) {
-            endTime = reservation.getStartTime() + Restaurant.RESERVATION_DURATION_SECONDS;
-            if (!(endTime <= reservation.getStartTime() || reservation.getEndTime() <= time))
-                return true;
-        }
-        return false;
-    }
-
-    public void unReserve(Reservation reservation) {
-        reservations.remove(reservation);
-    }
-
-    public void reserve(Reservation reservation) {
-        reservations.add(reservation);
-    }
-
-    public boolean isCluster() {
-        return false;
-    }
-
     @Override
     public String toString() {
         return "Table " + tableID +
@@ -92,4 +93,5 @@ public class Table {
                 ", " + (hasBabySeat ? "BABY SEAT" : "NO BABY SEAT") +
                 ") - " + (isOccupied() ? "Occupied" : "Available");
     }
+
 }

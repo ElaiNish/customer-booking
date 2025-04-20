@@ -14,33 +14,33 @@ public class Reservation {
     }
 
     public Group getGroup() {
-        return group;
+        return this.group;
     }
 
     public Table getTable() {
-        return table;
+        return this.table;
     }
 
     public long getStartTime() {
-        return startTime;
+        return this.startTime;
     }
 
     public long getEndTime() {
-        return endTime;
+        return this.endTime;
     }
 
     @Override
     public String toString() {
-        return group.toString() + "\nfrom " + startTime + " to " + endTime;
+        return this.group.toString() + "\nfrom " + this.startTime + " to " + this.endTime;
     }
 
     public void reserveTable(Table tbl) {
         this.table = tbl;
-        tbl.reserve(this);
+        table.reserve(this);
     }
 
     public void delay(long interval) {
-        startTime += interval;
-        endTime += interval;
+        this.startTime += interval;
+        this.endTime += interval;
     }
 }
