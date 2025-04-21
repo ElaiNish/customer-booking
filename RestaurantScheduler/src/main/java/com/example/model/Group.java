@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 public class Group {
-    private byte people;
-    private boolean prefersInside;
-    private boolean hasBaby;
-    private long arrivalTime; // seconds since Unix epoch
+    private final byte people;
+    private final boolean prefersInside;
+    private final boolean hasBaby;
+    private final long arrivalTime; // seconds since Unix epoch
+    private final int groupID;
     private static int idCounter = 0;
-    private int groupID;
 
     public Group(byte people, boolean prefersInside, boolean hasBaby, long arrivalTime) {
         this.people = people;

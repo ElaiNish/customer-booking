@@ -8,12 +8,12 @@ import java.util.List;
 public class Table {
     private static int idCounter = 0;
 
-    private int tableID;
-    private boolean isInside;
-    private boolean hasBabySeat;
-    private byte seats;
+    private final int tableID;
+    private final boolean isInside;
+    private final boolean hasBabySeat;
+    private final byte seats;
     private long availabilityTime; // free if current time >= availabilityTime
-    private List<Reservation> reservations;
+    private final List<Reservation> reservations;
 
     public Table(boolean isInside, boolean hasBabySeat, byte seats) {
         this.isInside = isInside;

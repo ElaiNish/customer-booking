@@ -3,7 +3,7 @@ package com.example.model;
 import java.util.Arrays;
 
 public class TableCluster extends Table {
-    private Table[] tables;
+    private final Table[] tables;
 
     public TableCluster(Table[] tables) {
         // For the cluster, we inherit:

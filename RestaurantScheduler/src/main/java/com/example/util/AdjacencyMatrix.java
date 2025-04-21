@@ -1,27 +1,31 @@
 package com.example.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.*;
 
 public class AdjacencyMatrix<T> {
-    private byte[][] matrix;
-    private T[] array;
+    private final byte[][] matrix;
+    private final T[] array;
 
     @SuppressWarnings("unchecked")
-    public AdjacencyMatrix(int size) {
-        this.matrix = new byte[size][size];
-        this.array = (T[]) new Object[size];
+    public AdjacencyMatrix(int size, Class<T> componentType) {
+        matrix = new byte[size][size];
+        array  = (T[]) Array.newInstance(componentType, size);
     }
 
 
-    public AdjacencyMatrix(List<T> list) {
-        int size = list.size();
-        // build a real array of type T[]
-        @SuppressWarnings("unchecked")
-        T[] tmp = (T[]) java.lang.reflect.Array.newInstance(
-                list.get(0).getClass(), size);
-        array = list.toArray(tmp);
-        matrix = new byte[size][size];
+    @SuppressWarnings("unchecked")
+    public AdjacencyMatrix(List<T> vertices) {
+        Objects.requireNonNull(vertices, "vertices");
+        int n = vertices.size();
+
+        // create true T[] instance
+        T sample = vertices.isEmpty() ? null : vertices.get(0);
+        Class<?> type = (sample == null) ? Object.class : sample.getClass();
+        array = (T[]) Array.newInstance(type, n);
+        vertices.toArray(array);
+
+        matrix = new byte[n][n];    // initially all zeros
     }
 
 
@@ -29,64 +33,66 @@ public class AdjacencyMatrix<T> {
         return array.clone();
     }
 
-    private int getIndex(T item) {
+    public List<T> getVertices() {
+        return List.of(array);
+    }
+
+    private int indexOf(T item) {
         if (item == null) return -1;
-        for (int i = 0; i < array.length; i++)
-            if (item.equals(array[i]))
-                return i;
+        for (int i = 0; i < array.length; i++) {
+            if (item.equals(array[i])) return i;
+        }
         return -1;
     }
 
     public List<T> getAdjacent(T item) {
-        int index = getIndex(item);
-        List<T> result = new ArrayList<>();
-        if (index == -1) return result;
+        int index = indexOf(item);
+        if (index == -1) return Collections.emptyList();
+
+        List<T> res = new ArrayList<>();
         for (int i = 0; i < array.length; i++)
-            if (matrix[index][i] == 1)
-                result.add(array[i]);
-        return result;
+            if (matrix[index][i] == 1) res.add(array[i]);
+        return res;
     }
 
     public List<T> getSpanningBFS(T item) {
-        int index = getIndex(item);
-        List<T> result = new ArrayList<>();
-        if (index == -1) return result;
-        List<T> queue = new ArrayList<>();
-        queue.add(item);
-        result.add(item);
-        while (!queue.isEmpty()) {
-            T current = queue.remove(0);
-            for (T adj : getAdjacent(current))
-                if (!result.contains(adj)) {
-                    queue.add(adj);
-                    result.add(adj);
+        int idx = indexOf(item);
+        if (idx == -1) return Collections.emptyList();
+
+        List<T> visited = new ArrayList<>();
+        Queue<T> q = new ArrayDeque<>();
+        q.add(item);
+        visited.add(item);
+
+        while (!q.isEmpty()) {
+            for (T adj : getAdjacent(q.poll())) {
+                if (!visited.contains(adj)) {
+                    visited.add(adj);
+                    q.add(adj);
                 }
+            }
         }
-        result.remove(item);
-        return result;
+        visited.remove(0);               // drop original
+        return visited;
     }
 
-    private boolean setAdjacent(T item1, T item2, byte mode) {
-        int ind1 = getIndex(item1);
-        int ind2 = getIndex(item2);
-        if (ind1 == -1 || ind2 == -1) return false;
-        matrix[ind1][ind2] = mode;
-        matrix[ind2][ind1] = mode;
+    private boolean setAdjacent(T a, T b, byte mode) {
+        int i = indexOf(a);
+        int j = indexOf(b);
+        if (i < 0 || j < 0) {
+            return false;   // one or both vertices not in the matrix
+        }
+        // undirected graph: symmetric assignment
+        matrix[i][j] = mode;
+        matrix[j][i] = mode;
         return true;
     }
 
-    public boolean makeAdjacent(T item1, T item2) {
-        return setAdjacent(item1, item2, (byte)1);
+    public boolean makeAdjacent(T a, T b)    {
+        return setAdjacent(a, b, (byte)1);
     }
 
-    public boolean makeNotAdjacent(T item1, T item2) {
-        return setAdjacent(item1, item2, (byte)0);
-    }
-
-    public List<T> getVertices() {
-        List<T> list = new ArrayList<>();
-        for (T t : array)
-            list.add(t);
-        return list;
+    public boolean makeNotAdjacent(T a, T b) {
+        return setAdjacent(a, b, (byte)0);
     }
 }

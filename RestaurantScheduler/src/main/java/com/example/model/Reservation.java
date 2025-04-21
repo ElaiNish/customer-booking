@@ -1,7 +1,7 @@
 package com.example.model;
 
 public class Reservation {
-    private Group group;
+    private final Group group;
     private Table table;
     private long startTime;
     private long endTime;
