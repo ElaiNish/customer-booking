@@ -12,7 +12,8 @@ public class TableCluster extends Table {
         // - seats: the sum of all table seats.
         super(tables[0].isInside(),
                 Arrays.stream(tables).anyMatch(Table::hasBabySeat),
-                (byte) Arrays.stream(tables).mapToInt(Table::getSeats).sum());
+                (byte) Arrays.stream(tables).mapToInt(Table::getSeats).sum()
+        );
         this.tables = tables;
     }
 
@@ -39,7 +40,7 @@ public class TableCluster extends Table {
 
     public boolean isContainedIn(TableCluster other) {
         if (other == this) return true;
-        return Arrays.stream(tables).allMatch(tbl -> other.contains(tbl));
+        return Arrays.stream(tables).allMatch(other::contains);
     }
 
     public boolean isEqual(TableCluster other) {

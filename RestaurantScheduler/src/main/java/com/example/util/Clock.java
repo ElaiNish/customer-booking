@@ -12,6 +12,8 @@ public class Clock {
         tickInterval = t;
     }
 
+    public static int getTickInterval() {return tickInterval;}
+
     public static long getTime() {
         return time;
     }
@@ -29,7 +31,16 @@ public class Clock {
         time = newTime.atZone(ZoneId.systemDefault()).toEpochSecond();
     }
 
-    public static LocalDateTime getDateTime() {
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault());
+    public static LocalDateTime getDateTime() { return unixToDateTime(time); }
+
+    public static long dateTimeToUnix(LocalDateTime dt) {
+        return dt.atZone(ZoneId.systemDefault()).toEpochSecond();
     }
+
+    public static LocalDateTime unixToDateTime(long epochSeconds) {
+        return LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(epochSeconds),
+                ZoneId.systemDefault());
+    }
+
 }

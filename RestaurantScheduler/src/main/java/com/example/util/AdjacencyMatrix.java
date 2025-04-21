@@ -9,8 +9,8 @@ public class AdjacencyMatrix<T> {
 
     @SuppressWarnings("unchecked")
     public AdjacencyMatrix(int size) {
-        matrix = new byte[size][size];
-        array = (T[]) new Object[size];
+        this.matrix = new byte[size][size];
+        this.array = (T[]) new Object[size];
     }
 
 
