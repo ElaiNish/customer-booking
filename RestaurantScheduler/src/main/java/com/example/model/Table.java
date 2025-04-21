@@ -30,7 +30,7 @@ public class Table {
 
     public boolean occupy() {
         if (isOccupied()) return false;
-        this.availabilityTime = Clock.getTime() + Restaurant.RESERVATION_DURATION_SECONDS;
+        this.availabilityTime = Clock.getTime() + Restaurant.RES_DURATION_SEC;
         return true;
     }
 
@@ -38,7 +38,7 @@ public class Table {
         if (reservations.isEmpty()) return false;
         long endTime;
         for (Reservation reservation : reservations) {
-            endTime = reservation.getStartTime() + Restaurant.RESERVATION_DURATION_SECONDS;
+            endTime = reservation.getStartTime() + Restaurant.RES_DURATION_SEC;
             if (!(endTime <= reservation.getStartTime() || reservation.getEndTime() <= time))
                 return true;
         }

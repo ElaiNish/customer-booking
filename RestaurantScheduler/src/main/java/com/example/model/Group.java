@@ -29,7 +29,7 @@ public class Group {
         return this.prefersInside;
     }
 
-    public boolean isHasBaby() {
+    public boolean hasBaby() {
         return this.hasBaby;
     }
 

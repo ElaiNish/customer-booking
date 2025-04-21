@@ -1,187 +1,200 @@
 package com.example.logic;
 
-import com.example.model.Group;
-import com.example.model.Reservation;
-import com.example.model.Table;
-import com.example.model.TableCluster;
-import com.example.util.AdjacencyMatrix;
-import com.example.util.Clock;
-import com.example.util.ComparableQueue;
-import com.example.util.HeapMax;
+import com.example.model.*;
+import com.example.util.*;
 
 import javax.swing.JOptionPane;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 
 public class Restaurant {
-    public static final long RESERVATION_DURATION_SECONDS = 60 * 60 + (long)(60 * 30); // 1.5 hours
 
-    private AdjacencyMatrix<Table> tables;
-    private List<Reservation> reservations;
-    private ComparableQueue<Group>[] queues;
-    private HeapMax<ComparableQueue<Group>> queuesHeap;
-    private List<Table> fullTablesList;
-    private int minSeatsPrecalculated;
+    public static final long RES_DURATION_SEC = 60 * 90;    // 1.5 hours is the reservation time
+
+    /* ───────── state ───────── */
+    private final AdjacencyMatrix<Table> tables;
+    private final List<Reservation> reservations;
+
+    /** 2‑dim index: 0..2*maxGroupSize (even=no baby, odd=baby) */
+    private final ComparableQueue<Group>[] queues;
+    private final HeapMax<ComparableQueue<Group>> queuesHeap;
+
+    /* memoized data */
+    private List<Table> fullTableList = null;
+    private int minSeatsPrecalculated = 0;
 
     @SuppressWarnings("unchecked")
-    public Restaurant(int maxGroupSize, AdjacencyMatrix<Table> tablesMatrix, List<Reservation> reservationsList) {
+    public Restaurant(int maxGroupSize,
+                      AdjacencyMatrix<Table> tablesMatrix,
+                      List<Reservation> reservationsList) {
+
         this.tables = tablesMatrix;
-        this.reservations = reservationsList;
-        queues = new ComparableQueue[2 * maxGroupSize + 1];
-        for (int i = 0; i < queues.length; i++) {
-            queues[i] = new ComparableQueue<>();
-        }
+        this.reservations  = new ArrayList<>(reservationsList);
+
+        // build queue array
+        int buckets = 2 * maxGroupSize + 1;
+        queues = new ComparableQueue[buckets];
+        for (int i = 0; i < buckets; i++) queues[i] = new ComparableQueue<>();
+
+        // build maxHeap and add queues
         queuesHeap = new HeapMax<>();
-        for (int i = 0; i < queues.length; i++) {
-            queuesHeap.add(queues[i]);
-        }
+        for (ComparableQueue<Group> q : queues) queuesHeap.add(q);
+
+        // pre‑assign any reservations
         assignReservations();
-        handleReservations();
+        handleReservations();   // seat those that start immediately
     }
 
-    public boolean addToQueue(Group g) {
-        int index = 2 * g.getPeople() + (g.isHasBaby() ? 1 : 0);
-        if (index >= queues.length || g.getPeople() == 0)
-            return false;
-        queues[index].add(g);
-        // In a complete implementation, re-heapify if needed.
-        return true;
-    }
-
-    public Table[] getBaseTablesArray() {
-        return tables.getArray();
-    }
-
-    public boolean addGroup(Group group) {
-        int index = 2 * group.getPeople() + (group.isHasBaby() ? 1 : 0);
+    public boolean addGroupToQueue(Group group) {
+        int index = 2 * group.getPeople() + (group.hasBaby() ? 1 : 0);
         if (index >= queues.length || group.getPeople() == 0) return false;
-
-        queues[index].add(group);          // enqueue
+        queues[index].add(group);
         queuesHeap.heapifyUp(queues[index]);
         return true;
     }
 
-    private void makeTableCombos(Table table, List<Table> currentList, List<Table> clusterList, int minSeats) {
-        if (currentList.contains(table)) return;
-        currentList.add(table);
-        TableCluster cluster = currentList.size() > 1 ? new TableCluster(currentList.toArray(new Table[0])) : null;
-        if (cluster != null && cluster.getSeats() >= minSeats) {
-            boolean isDup = false;
-            for (Table t : clusterList) {
-                if (t.isCluster() && ((TableCluster)t).isEqual(cluster)) {
-                    isDup = true;
-                    break;
-                }
-            }
-            if (!isDup)
-                clusterList.add(cluster);
-        }
-        for (Table adjTbl : tables.getAdjacent(table)) {
-            makeTableCombos(adjTbl, new ArrayList<>(currentList), clusterList, minSeats);
-        }
-    }
-
-    public List<Table> getTablesList(int minSeatsForGroups, boolean forceRecalculation) {
-        if (!forceRecalculation && fullTablesList != null && minSeatsForGroups >= minSeatsPrecalculated)
-            return fullTablesList;
-        List<Table> result = new ArrayList<>();
-        for (Table table : getBaseTablesArray()) {
-            makeTableCombos(table, new ArrayList<>(), result, minSeatsForGroups);
-        }
-        fullTablesList = result;
-        minSeatsPrecalculated = minSeatsForGroups;
-        return result;
-    }
-
-    public Table findBestTableFromEnumerable(Group group, List<Table> allTables) {
-        Table result = null;
-        int maxScore = 0;
-        int score;
-        boolean isValid;
-        for (Table table : allTables) {
-            isValid = (table.getSeats() >= group.getPeople()) &&
-                    !(group.isHasBaby() && !table.hasBabySeat()) &&
-                    !table.isOccupied() &&
-                    !table.isReserved(Clock.getTime());
-            if (isValid) {
-                score = (group.getPeople() == table.getSeats() ? 100 : 100 - (table.getSeats() - group.getPeople()))
-                        + (table.isInside() == group.isPrefersInside() ? 1 : 0)
-                        + (!group.isHasBaby() && table.hasBabySeat() ? -1 : 0)
-                        + (table.isCluster() ? -3 : 0);
-            } else {
-                score = 0;
-            }
-            if (score > maxScore) {
-                maxScore = score;
-                result = table;
-            }
-        }
-        return result;
-    }
-
-    public Table getBestTable(Group group) {
-        Table result = findBestTableFromEnumerable(group, List.of(getBaseTablesArray()));
-        if (result != null)
-            return result;
-        return findBestTableFromEnumerable(group, getTablesList(group.getPeople(), false));
-    }
+    /* ===============================================================
+       MAIN TICK HANDLERS
+       ============================================================== */
 
     public void handleQueues() {
+        if (queuesHeap.isEmpty()) return;
+
         Table table = null;
-        for (ComparableQueue<Group> q : queues) {
+        Stack<ComparableQueue<Group>> popped = new Stack<>();
+
+        while (table == null && !queuesHeap.isEmpty()) {
+            ComparableQueue<Group> q = queuesHeap.DeleteMax();
+            popped.push(q);
+
             if (!q.isEmpty()) {
-                Group group = q.peek();
-                table = getBestTable(group);
+                Group g = q.peek();
+                table = getBestTable(g);
                 if (table != null) {
                     table.occupy();
-                    q.remove();
-                    break;
+                    q.poll();                       // dequeue
                 }
             }
         }
-    }
-
-    public List<Group> getGroups() {
-        List<Group> allGroups = new ArrayList<>();
-        for (ComparableQueue<Group> q : queues) {
-            allGroups.addAll(q);
-        }
-        return allGroups;
-    }
-
-    private void assignReservations() {
-        long originalTime = Clock.getTime();
-        for (Reservation reservation : reservations) {
-            if (reservation.getTable() == null) {
-                int delayed = 0;
-                Clock.setTime(reservation.getStartTime());
-                Table tbl = getBestTable(reservation.getGroup());
-                while (tbl == null) {
-                    reservation.delay(1800);
-                    delayed += 1800;
-                    Clock.setTime(reservation.getStartTime());
-                    tbl = getBestTable(reservation.getGroup());
-                }
-                if (delayed > 0) {
-                    JOptionPane.showMessageDialog(null,
-                            "This reservation has been delayed " + (delayed / 60) +
-                                    " minutes\n" + reservation.toString());
-                }
-                reservation.reserveTable(tbl);
-            }
-        }
-        Clock.setTime(originalTime);
+        while (!popped.isEmpty()) queuesHeap.Add(popped.pop());
     }
 
     public void handleReservations() {
-        List<Reservation> reservationsToRemove = new ArrayList<>();
-        for (Reservation reservation : reservations) {
-            if (reservation.getTable() != null && Clock.getTime() >= reservation.getStartTime()) {
-                reservation.getTable().occupy();
-                reservationsToRemove.add(reservation);
-                reservation.getTable().unReserve(reservation);
+        if (reservations.isEmpty()) return;
+
+        List<Reservation> done = new ArrayList<>();
+        for (Reservation r : reservations) {
+            if (Clock.getTime() >= r.startTime() && r.table() != null) {
+                r.table().occupy();
+                r.table().unReserve(r);
+                done.add(r);
             }
         }
-        reservations.removeAll(reservationsToRemove);
+        reservations.removeAll(done);
+    }
+
+    /* ===============================================================
+       INTERNAL TABLE SEARCH
+       ============================================================== */
+
+    private Table[] baseTables() { return tables.getArray(); }
+
+    private List<Table> allTableCombos(int minSeats) {
+        if (fullTableList != null && minSeats >= minSeatsPrecalculated)
+            return fullTableList;
+
+        List<Table> combos = new ArrayList<>();
+        for (Table t : baseTables()) dfsCombos(t, new ArrayList<>(), combos, minSeats);
+        fullTableList = combos;
+        minSeatsPrecalculated = minSeats;
+        return combos;
+    }
+
+    private void dfsCombos(Table t, List<Table> current,
+                           List<Table> out, int minSeats) {
+
+        if (current.contains(t)) return;
+        current.add(t);
+
+        if (current.size() > 1) {
+            TableCluster cluster = new TableCluster(current.toArray(new Table[0]));
+            if (cluster.seats() >= minSeats && !duplicate(out, cluster)) out.add(cluster);
+        }
+        for (Table adj : tables.getAdjacent(t))
+            dfsCombos(adj, new ArrayList<>(current), out, minSeats);
+    }
+
+    private boolean duplicate(List<Table> list, TableCluster c) {
+        for (Table tbl : list)
+            if (tbl instanceof TableCluster tc && tc.isEqual(c)) return true;
+        return false;
+    }
+
+    private Table getBestTable(Group g) {
+        Table t = scoreBest(g, Arrays.asList(baseTables()));
+        if (t != null) return t;
+        return scoreBest(g, allTableCombos(g.people()));
+    }
+
+    private Table scoreBest(Group g, Iterable<Table> candidates) {
+        int best = 0;
+        Table res = null;
+        for (Table t : candidates) {
+            if (!fits(g, t)) continue;
+            int score = computeScore(g, t);
+            if (score > best) {
+                best = score;
+                res  = t;
+            }
+        }
+        return res;
+    }
+
+    /* score & fit helpers */
+    private boolean fits(Group g, Table t) {
+        return t.seats() >= g.people()
+                && !(g.hasBaby() && !t.hasBabySeat())
+                && !t.isOccupied()
+                && !t.isReserved(Clock.getTime());
+    }
+    private int computeScore(Group g, Table t) {
+        int waste = t.seats() - g.people();
+        return 100 - waste
+                + (t.isInside() == g.prefersInside() ? 1 : 0)
+                - (!g.hasBaby() && t.hasBabySeat() ? 1 : 0)
+                - (t instanceof TableCluster ? 3 : 0);
+    }
+
+    /* ===============================================================
+       RESERVATION ASSIGNER
+       ============================================================== */
+
+    private void assignReservations() {
+        for (Reservation r : reservations) assignSingleReservation(r);
+    }
+
+    private void assignSingleReservation(Reservation r) {
+        long original = Clock.getTime();
+        int   delayed = 0;
+
+        while (r.table() == null) {
+            Clock.setTime(r.startTime());
+            Table t = getBestTable(r.group());
+            if (t != null) {
+                r.reserveTable(t);
+                break;
+            }
+            r.delay(1800);           // push 30 min
+            delayed += 1800;
+        }
+        if (delayed > 0) {
+            JOptionPane.showMessageDialog(null,
+                    "Reservation delayed by " + delayed/60 + " minutes\n" + r);
+        }
+        Clock.setTime(original);
+    }
+    public void addReservation(Reservation r) {
+        reservations.add(r);
+        assignSingleReservation(r);
     }
 }
