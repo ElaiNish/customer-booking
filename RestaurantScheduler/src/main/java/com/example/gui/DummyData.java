@@ -29,7 +29,7 @@ public class DummyData {
         List<Reservation> reservations = new ArrayList<>();
         long currentTime = Clock.getTime();
         Group group1 = new Group((byte)3, true, false, currentTime);
-        reservations.add(new Reservation(group1, currentTime + 120, currentTime + 120 + Restaurant.RESERVATION_DURATION_SECONDS));
+        reservations.add(new Reservation(group1, currentTime + 120, currentTime + 120 + Restaurant.RES_DURATION_SEC));
 
         return new Restaurant(6, matrix, reservations);
     }

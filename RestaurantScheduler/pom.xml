@@ -42,19 +42,6 @@
     </dependencies>
 
     <build>
-<!--        <resources>-->
-<!--            &lt;!&ndash; copy usual resources (if you later add src/main/resources) &ndash;&gt;-->
-<!--            <resource>-->
-<!--                <directory>src/main/resources</directory>-->
-<!--                <includes><include>**/*</include></includes>-->
-<!--            </resource>-->
-
-<!--            &lt;!&ndash; copy any .fxml next to .java &ndash;&gt;-->
-<!--            <resource>-->
-<!--                <directory>src/main/java</directory>-->
-<!--                <includes><include>**/*.fxml</include></includes>-->
-<!--            </resource>-->
-<!--        </resources>-->
         <plugins>
             <!-- launches JavaFX app; pulls modules from the deps above -->
             <plugin>
