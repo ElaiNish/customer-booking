@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+<?import com.example.gui.TableCanvas?>
+
+<BorderPane fx:controller="com.example.gui.MainController"
+            xmlns:fx="http://javafx.com/fxml" prefWidth="900" prefHeight="600">
+
+    <!-- Top -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <padding>
+                <Insets topRightBottomLeft="50" />
+            </padding>
+            <Label fx:id="clockLabel" text="Time: --"/>
+            <Button text="Tick" onAction="#onTick"/>
+            <Button text="Play/Pause" onAction="#onPlayPause"/>
+        </HBox>
+    </top>
+
+    <!-- Center -->
+    <center>
+        <TableCanvas fx:id="tableCanvas" />
+    </center>
+
+</BorderPane>
+
