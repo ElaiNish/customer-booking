@@ -37,19 +37,20 @@ public class Table {
     public boolean isReserved(long time) {
         if (reservations.isEmpty()) return false;
 
-        // the walk-in (or cluster) would occupy [time , time+RES_DURATION]
-        long newEnd = time + Restaurant.RES_DURATION_SEC;
+        long newUsageEnd = time + Restaurant.RES_DURATION_SEC;
 
         for (Reservation r : reservations) {
             long resStart = r.getStartTime();
-            long resEnd   = r.getEndTime();          // already start+RES_DURATION
+            long resEnd   = r.getEndTime();
 
-            // intervals overlap unless one ends before the other starts
-            if (!(newEnd <= resStart || resEnd <= time))
+            // Check if [time, newUsageEnd] overlaps with [resStart, resEnd]
+            if (!(newUsageEnd <= resStart || resEnd <= time)) {
                 return true;
+            }
         }
         return false;
     }
+
 
     public void unReserve(Reservation reservation) {
         reservations.remove(reservation);

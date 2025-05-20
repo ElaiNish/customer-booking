@@ -44,4 +44,19 @@ class RestaurantTest {
         assertTrue(restaurant.addGroupToQueue(g));
         assertFalse(restaurant.getGroups().isEmpty());
     }
+
+    @Test
+    void testWalkInBeforeReservation() {
+        var tables = List.of(new Table(true, false, (byte) 4));
+        var matrix = new AdjacencyMatrix<>(tables);
+        Clock.setTime(0);
+
+        var group = new Group((byte) 2, true, false, Clock.getTime());
+        var res = new Reservation(group, Clock.getTime() + 3600, Clock.getTime() + 3600 + Restaurant.RES_DURATION_SEC);
+        tables.get(0).reserve(res);
+
+        // simulate a walk-in that would leave before reservation
+        assertFalse(tables.get(0).isReserved(Clock.getTime()));
+    }
+
 }
