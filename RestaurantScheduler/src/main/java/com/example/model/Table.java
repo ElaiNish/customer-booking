@@ -36,10 +36,16 @@ public class Table {
 
     public boolean isReserved(long time) {
         if (reservations.isEmpty()) return false;
-        long endTime;
-        for (Reservation reservation : reservations) {
-            endTime = reservation.getStartTime() + Restaurant.RES_DURATION_SEC;
-            if (!(endTime <= reservation.getStartTime() || reservation.getEndTime() <= time))
+
+        // the walk-in (or cluster) would occupy [time , time+RES_DURATION]
+        long newEnd = time + Restaurant.RES_DURATION_SEC;
+
+        for (Reservation r : reservations) {
+            long resStart = r.getStartTime();
+            long resEnd   = r.getEndTime();          // already start+RES_DURATION
+
+            // intervals overlap unless one ends before the other starts
+            if (!(newEnd <= resStart || resEnd <= time))
                 return true;
         }
         return false;

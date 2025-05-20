@@ -33,6 +33,10 @@
                 <Button text="Add Group"
                         onAction="#onAddGroup"
                         styleClass="add-btn"/>
+                <Button text="Restaurant Setup…" onAction="#onOpenSetup"/>
+                <Button fx:id="startButton" text="Start Simulation"
+                        onAction="#onStartSimulation" disable="true"/>
+
             </HBox>
         </VBox>
     </top>

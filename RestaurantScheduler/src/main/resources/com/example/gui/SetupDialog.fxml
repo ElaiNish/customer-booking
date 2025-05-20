@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.gui.SetupDialogController">
+    <content>
+        <VBox spacing="8">
+            <!-- ① table-input line -->
+            <HBox spacing="6">
+                <Label text="Seats:"/>
+                <Spinner fx:id="seatsSpinner" prefWidth="80"/>
+                <Label text="Baby seat"/>
+                <CheckBox fx:id="babyCheck"/>
+                <Label text="Location"/>
+                <ChoiceBox fx:id="locChoice"/>
+                <Button text="Add Table" onAction="#onAddTable"/>
+            </HBox>
+
+            <Separator/>
+
+            <!-- ② list of tables -->
+            <Label text="Current tables:"/>
+            <ListView fx:id="tablesList" prefHeight="240"/>
+        </VBox>
+    </content>
+
+    <buttonTypes>
+        <ButtonType fx:id="okBtn" text="Done" buttonData="OK_DONE"/>
+        <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    </buttonTypes>
+</DialogPane>

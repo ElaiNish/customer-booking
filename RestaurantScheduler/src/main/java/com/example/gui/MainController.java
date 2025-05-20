@@ -13,6 +13,17 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.Duration;
 import com.example.gui.DummyData;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import com.example.model.Table;
+import com.example.logic.RestaurantFactory;
+import java.util.List;
+import java.util.List;
+import com.example.model.Table;
+import com.example.model.Reservation;
+
+
 
 
 /**
@@ -33,10 +44,14 @@ public class MainController {
     @FXML private ListView<Group>   waitingList;
 
     /* ─── model & timer ───────────────────────────────────────────── */
-    private final Restaurant restaurant = DummyData.createRestaurant();
+    private Restaurant restaurant = DummyData.createRestaurant();
     private final Timeline   timer      = new Timeline(
             new KeyFrame(Duration.seconds(1), e -> tickAndRefresh()));
     private boolean playing = true;
+
+    @FXML private Button startButton;
+    private ObservableList<Table> userTables = FXCollections.observableArrayList();
+
 
     /* observable backing list for ListView */
     private final ObservableList<Group> waitingGroups =
@@ -77,6 +92,7 @@ public class MainController {
                 setText(txt);
             }
         });
+        startButton.setDisable(true);
     }
 
     /* =================================================================
@@ -125,6 +141,52 @@ public class MainController {
         refreshWaitingList();
         tableCanvas.redraw();
     }
+    @FXML
+    private void onOpenSetup() throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("SetupDialog.fxml"));
+        DialogPane pane = loader.load();
+        SetupDialogController dctrl = loader.getController();
+
+        Dialog<ButtonType> dlg = new Dialog<>();
+        dlg.setTitle("Restaurant Setup");
+        dlg.setDialogPane(pane);
+
+        dlg.showAndWait().ifPresent(btn -> {
+            if (btn.getButtonData() == ButtonBar.ButtonData.OK_DONE) {
+                userTables = dctrl.getTables();
+                startButton.setDisable(userTables.isEmpty());
+            }
+        });
+    }
+
+    @FXML
+    private void onStartSimulation() {
+
+        if (userTables.isEmpty()) return;   // nothing to add
+
+        /* 1️⃣  combine current (DummyData) tables with new ones */
+        List<Table> combined = new java.util.ArrayList<>();
+        // existing singles (DummyData) — clusters are built on demand
+        java.util.Collections.addAll(combined, restaurant.getBaseTablesArray());
+        // user-defined tables
+        combined.addAll(userTables);
+
+        /* 2️⃣  keep any current reservations (there may be the demo reservation) */
+        List<Reservation> existing = restaurant.getReservations();
+
+        /* 3️⃣  build a fresh Restaurant from the merged list */
+        restaurant = RestaurantFactory.build(combined, existing);
+
+        /* 4️⃣  update UI, enable controls */
+        tableCanvas.setRestaurant(restaurant);
+        tableCanvas.redraw();
+
+        startButton.setDisable(true);
+        playPauseButton.setDisable(false);
+        timer.play();                       // (re)start clock on new layout
+    }
+
+
 
     /* =================================================================
        Helpers
