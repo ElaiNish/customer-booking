@@ -136,8 +136,6 @@ public class MainController {
             return;
         }
 
-        waitingGroups.add(g);                 // visual
-        restaurant.handleQueues();            // try seat immediately
         refreshWaitingList();
         tableCanvas.redraw();
     }
