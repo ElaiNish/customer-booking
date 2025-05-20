@@ -1,28 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.*?>
 <?import com.example.gui.TableCanvas?>
 
 <BorderPane fx:controller="com.example.gui.MainController"
-            xmlns:fx="http://javafx.com/fxml" prefWidth="900" prefHeight="600">
+            xmlns:fx="http://javafx.com/fxml">
 
-    <!-- Top -->
+    <!-- 1️⃣  TOP-MOST BAR : play/pause, tick, clock -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <padding>
-                <Insets topRightBottomLeft="50" />
-            </padding>
-            <Label fx:id="clockLabel" text="Time: --"/>
-            <Button text="Tick" onAction="#onTick"/>
-            <Button text="Play/Pause" onAction="#onPlayPause"/>
-        </HBox>
+        <VBox spacing="4">
+
+            <HBox spacing="8" alignment="CENTER">
+                <Button       text="Tick"             onAction="#onTick"/>
+                <Button fx:id="playPauseButton"
+                        text="Pause"            onAction="#onPlayPause"/>
+                <Label  fx:id="clockLabel"            text="Time: 00:00"/>
+            </HBox>
+
+            <!-- 2️⃣  NEW  walk-in-group input strip -->
+            <HBox spacing="8" alignment="CENTER">
+
+                <Label text="Size"/>
+                <Spinner fx:id="sizeSpinner" prefWidth="70"/>
+
+                <Label text="Baby"/>
+                <CheckBox fx:id="babyCheck"/>
+
+                <Label text="Location"/>
+                <ChoiceBox fx:id="locationChoice"/>
+
+                <Button text="Add Group"
+                        onAction="#onAddGroup"
+                        styleClass="add-btn"/>
+                <Button text="Restaurant Setup…" onAction="#onOpenSetup"/>
+                <Button fx:id="startButton" text="Start Simulation"
+                        onAction="#onStartSimulation" disable="true"/>
+
+            </HBox>
+        </VBox>
     </top>
 
-    <!-- Center -->
+    <!-- 3️⃣  MAIN CANVAS : tables schematic -->
     <center>
-        <TableCanvas fx:id="tableCanvas" />
+        <com.example.gui.TableCanvas fx:id="tableCanvas"
+                                     width="800" height="560"/>
     </center>
 
-</BorderPane>
+    <!-- 4️⃣  NEW  waiting-groups list -->
+    <right>
+        <ListView fx:id="waitingList"
+                  prefWidth="220"
+                  styleClass="waiting-list"/>
+    </right>
 
+</BorderPane>

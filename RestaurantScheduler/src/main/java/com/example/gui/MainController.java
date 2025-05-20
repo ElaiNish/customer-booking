@@ -1,34 +1,103 @@
 package com.example.gui;
 
-
 import com.example.logic.Restaurant;
+import com.example.model.Group;
 import com.example.util.Clock;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.util.Duration;
+import com.example.gui.DummyData;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import com.example.model.Table;
+import com.example.logic.RestaurantFactory;
+import java.util.List;
+import java.util.List;
+import com.example.model.Table;
+import com.example.model.Reservation;
 
+
+
+
+/**
+ * Main JavaFX controller.
+ * Adds a walk-in-group input strip + live waiting-list pane.
+ */
 public class MainController {
 
-    @FXML private Label clockLabel;
+    /* ─── existing controls ────────────────────────────────────────── */
+    @FXML private Label       clockLabel;
     @FXML private TableCanvas tableCanvas;
-    @FXML private Button playPauseButton;
+    @FXML private Button      playPauseButton;
 
-    private final Restaurant restaurant = DummyData.createRestaurant();
-    private final Timeline timer = new Timeline(
+    /* ─── NEW controls for walk-in groups ─────────────────────────── */
+    @FXML private Spinner<Integer> sizeSpinner;
+    @FXML private CheckBox         babyCheck;
+    @FXML private ChoiceBox<String> locationChoice;
+    @FXML private ListView<Group>   waitingList;
+
+    /* ─── model & timer ───────────────────────────────────────────── */
+    private Restaurant restaurant = DummyData.createRestaurant();
+    private final Timeline   timer      = new Timeline(
             new KeyFrame(Duration.seconds(1), e -> tickAndRefresh()));
     private boolean playing = true;
 
+    @FXML private Button startButton;
+    private ObservableList<Table> userTables = FXCollections.observableArrayList();
+
+
+    /* observable backing list for ListView */
+    private final ObservableList<Group> waitingGroups =
+            FXCollections.observableArrayList();
+
+    /* =================================================================
+       FXML life-cycle
+       ================================================================ */
     @FXML
     private void initialize() {
+
+        /* timer starts immediately */
         timer.setCycleCount(Timeline.INDEFINITE);
         timer.play();
+
+        /* hook model into canvas & first paint */
         tableCanvas.setRestaurant(restaurant);
+        tableCanvas.redraw();
         updateClock();
+
+        /* ---------- NEW widget bootstrap --------------------------- */
+        sizeSpinner.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 2));
+
+        locationChoice.setItems(
+                FXCollections.observableArrayList("Inside", "Outside"));
+        locationChoice.getSelectionModel().selectFirst();
+
+        waitingList.setItems(waitingGroups);
+        waitingList.setCellFactory(lv -> new ListCell<>() {
+            @Override protected void updateItem(Group g, boolean empty) {
+                super.updateItem(g, empty);
+                if (empty || g == null) { setText(null); return; }
+                String txt = "G" + g.getGroupID() +
+                        " • " + g.getPeople() +
+                        (g.hasBaby() ? " 👶" : "") +
+                        (g.isPrefersInside() ? " • in" : " • out");
+                setText(txt);
+            }
+        });
+        startButton.setDisable(true);
     }
 
+    /* =================================================================
+       Simulation controls
+       ================================================================ */
     @FXML private void onTick() { tickAndRefresh(); }
 
     @FXML
@@ -38,17 +107,95 @@ public class MainController {
         if (playing) timer.play(); else timer.stop();
     }
 
-    /* --- helpers --- */
     private void tickAndRefresh() {
         Clock.tick();
         restaurant.handleQueues();
         restaurant.handleReservations();
-        updateClock();
+        refreshWaitingList();
         tableCanvas.redraw();
+        updateClock();
+    }
+
+    /* =================================================================
+       NEW  : Add walk-in group
+       ================================================================ */
+    @FXML
+    private void onAddGroup(ActionEvent e) {
+
+        int size = sizeSpinner.getValue();
+        boolean baby = babyCheck.isSelected();
+        boolean insidePref =
+                "Inside".equals(locationChoice.getSelectionModel().getSelectedItem());
+
+        Group g = new Group((byte) size, insidePref, baby, Clock.getTime());
+
+        if (!restaurant.addGroupToQueue(g)) {
+            new Alert(Alert.AlertType.ERROR,
+                    "Could not queue group – size out of range?",
+                    ButtonType.OK).show();
+            return;
+        }
+
+        waitingGroups.add(g);                 // visual
+        restaurant.handleQueues();            // try seat immediately
+        refreshWaitingList();
+        tableCanvas.redraw();
+    }
+    @FXML
+    private void onOpenSetup() throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("SetupDialog.fxml"));
+        DialogPane pane = loader.load();
+        SetupDialogController dctrl = loader.getController();
+
+        Dialog<ButtonType> dlg = new Dialog<>();
+        dlg.setTitle("Restaurant Setup");
+        dlg.setDialogPane(pane);
+
+        dlg.showAndWait().ifPresent(btn -> {
+            if (btn.getButtonData() == ButtonBar.ButtonData.OK_DONE) {
+                userTables = dctrl.getTables();
+                startButton.setDisable(userTables.isEmpty());
+            }
+        });
+    }
+
+    @FXML
+    private void onStartSimulation() {
+
+        if (userTables.isEmpty()) return;   // nothing to add
+
+        /* 1️⃣  combine current (DummyData) tables with new ones */
+        List<Table> combined = new java.util.ArrayList<>();
+        // existing singles (DummyData) — clusters are built on demand
+        java.util.Collections.addAll(combined, restaurant.getBaseTablesArray());
+        // user-defined tables
+        combined.addAll(userTables);
+
+        /* 2️⃣  keep any current reservations (there may be the demo reservation) */
+        List<Reservation> existing = restaurant.getReservations();
+
+        /* 3️⃣  build a fresh Restaurant from the merged list */
+        restaurant = RestaurantFactory.build(combined, existing);
+
+        /* 4️⃣  update UI, enable controls */
+        tableCanvas.setRestaurant(restaurant);
+        tableCanvas.redraw();
+
+        startButton.setDisable(true);
+        playPauseButton.setDisable(false);
+        timer.play();                       // (re)start clock on new layout
+    }
+
+
+
+    /* =================================================================
+       Helpers
+       ================================================================ */
+    private void refreshWaitingList() {
+        waitingGroups.setAll(restaurant.getGroups());
     }
 
     private void updateClock() {
         clockLabel.setText("Time: " + Clock.getDateTime());
     }
 }
-
