@@ -23,6 +23,9 @@ import java.util.List;
 import com.example.model.Table;
 import com.example.model.Reservation;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 
 
 
@@ -49,6 +52,7 @@ public class MainController {
             new KeyFrame(Duration.seconds(1), e -> tickAndRefresh()));
     private boolean playing = true;
 
+
     @FXML private Button startButton;
     private ObservableList<Table> userTables = FXCollections.observableArrayList();
 
@@ -57,11 +61,14 @@ public class MainController {
     private final ObservableList<Group> waitingGroups =
             FXCollections.observableArrayList();
 
-    /* =================================================================
-       FXML life-cycle
-       ================================================================ */
+    // NEW: list for reservations
+    @FXML private ListView<Reservation> reservationsList;
+    private final ObservableList<Reservation> reservationsObs =
+            FXCollections.observableArrayList();
+
     @FXML
     private void initialize() {
+        Clock.setTime(Clock.dateTimeToUnix(java.time.LocalDateTime.of(2025, 3, 20, 18, 0)));
 
         /* timer starts immediately */
         timer.setCycleCount(Timeline.INDEFINITE);
@@ -93,6 +100,20 @@ public class MainController {
             }
         });
         startButton.setDisable(true);
+
+        /* hook reservations list */
+        reservationsList.setItems(reservationsObs);
+        reservationsList.setCellFactory(lv -> new ListCell<>() {
+            private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+            @Override protected void updateItem(Reservation r, boolean empty) {
+                super.updateItem(r, empty);
+                if (empty || r == null) { setText(null); return; }
+                String from = fmt.format(Clock.unixToDateTime(r.getStartTime()));
+                String tbl  = (r.getTable() == null ? " – " : " T"+r.getTable().getTableID());
+                setText("⏰ " + from + tbl + " • G" + r.getGroup().getGroupID());
+            }
+        });
+        refreshReservations();
     }
 
     /* =================================================================
@@ -112,6 +133,7 @@ public class MainController {
         restaurant.handleQueues();
         restaurant.handleReservations();
         refreshWaitingList();
+        refreshReservations();
         tableCanvas.redraw();
         updateClock();
     }
@@ -191,6 +213,9 @@ public class MainController {
        ================================================================ */
     private void refreshWaitingList() {
         waitingGroups.setAll(restaurant.getGroups());
+    }
+    private void refreshReservations() {
+        reservationsObs.setAll(restaurant.getReservations());
     }
 
     private void updateClock() {

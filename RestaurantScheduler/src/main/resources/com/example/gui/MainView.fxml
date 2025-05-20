@@ -47,11 +47,25 @@
                                      width="800" height="560"/>
     </center>
 
-    <!-- 4️⃣  NEW  waiting-groups list -->
+    <!-- 4️⃣  RIGHT PANE : queues & reservations -->
     <right>
-        <ListView fx:id="waitingList"
-                  prefWidth="220"
-                  styleClass="waiting-list"/>
+        <VBox spacing="6" prefWidth="240" BorderPane.alignment="TOP_CENTER">
+
+            <!-- Waiting groups -->
+            <Label text="Waiting Groups"/>
+            <ListView fx:id="waitingList"
+                      prefHeight="200"
+                      styleClass="waiting-list"/>
+
+            <Separator/>
+
+            <!-- Upcoming / active reservations -->
+            <Label text="Reservations"/>
+            <ListView fx:id="reservationsList"
+                      prefHeight="240"
+                      styleClass="reservations-list"/>
+        </VBox>
     </right>
+
 
 </BorderPane>
