@@ -12,10 +12,10 @@
         <VBox spacing="4">
 
             <HBox spacing="8" alignment="CENTER">
-                <Button       text="Tick"             onAction="#onTick"/>
+                <Button text="Tick" onAction="#onTick"/>
                 <Button fx:id="playPauseButton"
-                        text="Pause"            onAction="#onPlayPause"/>
-                <Label  fx:id="clockLabel"            text="Time: 00:00"/>
+                        text="Pause" onAction="#onPlayPause"/>
+                <Label  fx:id="clockLabel" text="Time: 00:00"/>
             </HBox>
 
             <!-- 2️⃣  NEW  walk-in-group input strip -->
